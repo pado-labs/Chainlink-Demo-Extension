@@ -26,11 +26,13 @@ async function connectMetamask() {
     connectButton.style.display = "none";
 }
 
+const symbol = "USDT";
+const BaseValue = "200";
 const getexdataButton = document.querySelector("#getexdata");
 getexdataButton.addEventListener("click", async () => {
     // get the two password inputs
-    const apikey = document.querySelector("#password").value;
-    const secretKey = document.querySelector("#password2").value;
+    let apikey = document.querySelector("#password").value;
+    let secretKey = document.querySelector("#password2").value;
 
     // get the result div
     const result = document.querySelector("#result");
@@ -46,8 +48,8 @@ getexdataButton.addEventListener("click", async () => {
         result.innerHTML = "";
         return;
     }
-    console.log(binance.totalAccountBalance);
-    result.innerHTML = "exchange balance: " + binance.totalAccountBalance;
+    console.log("binance =", binance);
+    result.innerHTML = symbol + " balance: " + binance.totalAccountTokenMap[symbol].amount;
 });
 
 const EASContractAddress = "0xC2679fBD37d54388Ce493F1DB75320D236e1815e"; // Sepolia v0.26
@@ -67,7 +69,7 @@ izkButton.addEventListener("click", async () => {
         return;
     }
     const result = document.querySelector("#result").innerHTML;
-    const resultstr = result.substring("exchange balace: ".length);
+    const resultstr = result.substring((symbol + " balace: ").length);
     console.log('result=', result);
     const resultNumber = Number(resultstr, 10);
     console.log('resultNumber=', resultNumber);
@@ -77,7 +79,6 @@ izkButton.addEventListener("click", async () => {
     }
     const izkresult = document.querySelector("#izkresult");
     izkresult.innerHTML = "getting izk proof..."
-    const resultbool = resultNumber > 100;
     const truehash = await getHash(true);
     const falsehash = await getHash(false);
     
@@ -88,7 +89,7 @@ izkButton.addEventListener("click", async () => {
         method: 'GET',
         url: 'http://127.0.0.1:8000/get_izk',
         data: {
-            basevalue: '100',
+            basevalue: BaseValue,
             balance: resultstr,
             truehash: truehash,
             falsehash: falsehash
@@ -106,7 +107,7 @@ izkButton.addEventListener("click", async () => {
     const izkres = getQueryRes(izkresponse);
     const izkresstr = izkres.res?"true":"false";
     //izkresult.innerHTML = "greaterThan100U: " + izkresstr + ", endorsement data: " + izkres.signature;
-    izkresult.innerHTML = `Endorsement: {Greater than 100U: ${izkresstr}, Verifier signature: ${izkres.signature}}`;
+    izkresult.innerHTML = `Endorsement: {Greater than ${BaseValue}: ${izkresstr}, Verifier signature: ${izkres.signature}}`;
 });
 async function getHash(greater) {
     const network = await provider.getNetwork();
@@ -123,7 +124,7 @@ async function getHash(greater) {
     console.log('apikeyhash=', apikeyhash);
     const encodedData = schemaEncoder.encodeData([
         { name: "apiKeyHash", value: apikeyhash, type: "bytes32" },
-        { name: "baseValue", value: "100U", type: "string" },
+        { name: "baseValue", value: BaseValue, type: "string" },
         { name: "greaterThanBaseValue", value: greater, type: "bool" },
     ]);
     console.log('encodedData=', encodedData);
@@ -161,6 +162,8 @@ async function getHash(greater) {
 }
 
 const attestButton = document.querySelector("#attest");
+let newAttestationUID;
+let getVerifyResult;
 attestButton.addEventListener("click", async () => {
     if (!izkresponse) {
         alert("Please get IZK proof first");
@@ -187,7 +190,9 @@ attestButton.addEventListener("click", async () => {
     }
 
     const attestresult = document.querySelector("#attestresult");
+    const checkresult = document.querySelector("#checkresult");
     attestresult.innerHTML = "attesting...";
+    checkresult.innerHTML = "";
 
     var tx;
     try {
@@ -205,12 +210,16 @@ attestButton.addEventListener("click", async () => {
     } catch(er) {
         alert("attest to eas error, please check params");
         attestresult.innerHTML = "";
+        checkresult.innerHTML = "";
         return;
     }
-    const newAttestationUID = await tx.wait();
+    newAttestationUID = await tx.wait();
     console.log('newAttestationUID=', newAttestationUID);
     const eascanurl = 'https://sepolia.easscan.org/attestation/view/' + newAttestationUID;
     attestresult.innerHTML = `EAS Scan Link: <a target="_blank" href="${eascanurl}"> ${eascanurl}</a>`;
+
+    await sendChainlinkRequest();
+    checkresult.innerHTML = `check ${getVerifyResult.data.verifyResult}`;
 });
 function getQueryRes(variable) {
     const params = {};
@@ -220,5 +229,24 @@ function getQueryRes(variable) {
         params[pair[0]] = pair[1];
     }
     return params;
+}
+
+
+async function sendChainlinkRequest() {
+    const params = {
+        method: 'GET',
+        url: 'http://127.0.0.1:9000/getVerify',
+        data: {
+            attestationUID: newAttestationUID,
+            userAddress: addr
+        },
+    };
+    try {
+        getVerifyResult = await request(params);
+    } catch(error) {
+        console.log('getVerify error=', error);
+        return;
+    }
+    console.log("getVerifyResult=", getVerifyResult);
 }
 
