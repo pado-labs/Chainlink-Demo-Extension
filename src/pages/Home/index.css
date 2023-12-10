@@ -135,7 +135,8 @@ button:hover {
 
 #result,
 #izkresult,
-#attestresult {
+#attestresult,
+#checkresult {
   font-size: 18px;
   line-height: 22px;
   color: rgba(0, 0, 0, 0.6);

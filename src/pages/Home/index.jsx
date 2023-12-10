@@ -218,7 +218,10 @@ attestButton.addEventListener("click", async () => {
     const eascanurl = 'https://sepolia.easscan.org/attestation/view/' + newAttestationUID;
     attestresult.innerHTML = `EAS Scan Link: <a target="_blank" href="${eascanurl}"> ${eascanurl}</a>`;
 
+    checkresult.innerHTML = `checking`;
     await sendChainlinkRequest();
+    getVerifyResult = JSON.parse(getVerifyResult);
+    console.log("getVerifyResult=", getVerifyResult);
     checkresult.innerHTML = `check ${getVerifyResult.data.verifyResult}`;
 });
 function getQueryRes(variable) {
