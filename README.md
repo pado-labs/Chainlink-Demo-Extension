@@ -6,6 +6,11 @@ The dApp will check the amount threshold with the proof, and together with the p
 
 Typical examples could be rewarding a community NFT, fee discount or MEME to an off-chain token holder, for whose holdings are not analyzable unlike on-chain addresses.
 
+## Compile
+
+npm install
+npm run build
+
 ## Running
 
 1. Access `chrome://extensions/`
